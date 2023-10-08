@@ -1,4 +1,4 @@
-import { APIInfo } from '@/edvinas1122/api_wrapper';
+import { APIInfo } from '@edvinas1122/api_wrapper';
 
 /* 
     https://developers.notion.com/reference/intro
