@@ -1,0 +1,35 @@
+{
+	"name": "@edvinas1122/notion-database-tool",
+	"version": "0.0.1-alpha.1",
+	"description": "Tool for easy notion table editing",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"scripts": {
+		"build": "tsc",
+		"prepublishOnly": "npm run build",
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Edvinas1122/notion-database-tool.git",
+		"directory": "packages/notion-database-tool"
+	},
+	"keywords": [
+		"notion",
+		"database",
+		"tool"
+	],
+	"author": "Edvinas Momkus",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/Edvinas1122/notion-database-tool/issues"
+	},
+	"homepage": "https://github.com/Edvinas1122/notion-database-tool#readme",
+	"dependencies": {
+		"@edvinas1122/api_wrapper": "1.0.0"
+	},
+	"devDependencies": {
+		"@types/node": "^14.14.31",
+		"typescript": "^4.2.3"
+	}
+}
