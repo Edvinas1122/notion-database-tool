@@ -156,10 +156,13 @@ export class DatabaseQueryBuilder {
 	*/
 	public async execute(): Promise<any> {
 		this.convertFilterInfoToFilter();
-		const formattedQuery = {
-			filter: this.filter,
-			sorts: this.sorts,
-		};
+		const formattedQuery: any = {};
+		if (this.sorts.length > 0) {
+			formattedQuery.sorts = this.sorts;
+		}
+		if (this.filterTokens.length > 0) {
+			formattedQuery.filter = this.filter;
+		}
 		const database = await this.notion.queryDatabase(
 			this.database_id,
 			formattedQuery
