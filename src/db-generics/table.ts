@@ -29,7 +29,7 @@ class EntryExtractor {
 	[key: string]: any;
 	constructor(
 		// private id: string,
-		properties: Properties,
+		private properties: Properties,
 		private extractionQuery: any,
 		private dataAdapter: DataAdapterFunction,
 		private queryComparator: string,
@@ -42,6 +42,10 @@ class EntryExtractor {
 			this[methodName] = this.assignExtractor(property);
 			console.log(methodName);
 		}
+	}
+
+	public async all(): Promise<Entry> {
+		return await this.extractionQuery.execute();
 	}
 
 	private assignExtractor(property: Property): (key: string) => Promise<Entry>
@@ -121,6 +125,13 @@ export class Table
 		);
 	}
 
+	// getEntriesAll(): any
+	// {
+	// 	return this.extractionQuery.execute()
+	// 		// .then((data: any) => {
+
+	// }
+
 	newEntrySlot(): EntrySlot
 	{
 		return new EntrySlot(
@@ -150,6 +161,10 @@ class Entry {
 
 	async update(key: string, value: any): Promise<any> {
 		return await this.methodProvider.editProperty(key, value);
+	}
+
+	async all(): Promise<any[]> {
+		return this.methodProvider.all();
 	}
 
 	async delete(): Promise<any> {
