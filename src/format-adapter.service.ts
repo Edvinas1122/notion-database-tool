@@ -96,9 +96,9 @@ export default class NotionFormatterService {
 	/*
 		query builder to aquire filtered entries
 	*/
-	public getDatabaseQueryBuilder(database_id: string): any {
-		return new DatabaseQueryBuilder(database_id, this.notion);
-	}
+	// public getDatabaseQueryBuilder(database_id: string): any {
+	// 	return new DatabaseQueryBuilder(database_id, this.notion);
+	// }
 
 	private async handleSubBlocks(blocks: NotionBlock[]): Promise<NotionBlock[]> {
 		const updatedList = await Promise.all(blocks.map(async (block: NotionBlock) => {
@@ -232,96 +232,6 @@ enum FilteredDataType {
 }
 
 
-/*
-	Table ID contexted
-*/
-class DatabaseQueryBuilder {
-	private filterTokens: any[] = [];
-	private filter: any = {};
-	private sorts: any[] = [];
-	constructor(
-		private database_id: string,
-		private notion: NotionService,
-	) {
-	}
-
-	private convertFilterInfoToFilter() {
-		if (this.filterTokens.length === 1) {
-			this.filter = this.filterTokens[0];
-			return;
-		}
-		let currentNode = this.filter;
-		this.filterTokens.forEach((token) => {
-			if (token.token === "and") {
-				currentNode.and = [];
-				currentNode = currentNode.and;
-			} else if (token.token === "or") {
-				currentNode.or = [];
-				currentNode = currentNode.or;
-			} else {
-				currentNode.push(token);
-			}
-		});
-	}
-
-	public and() {
-		this.filterTokens.push({
-			token: "and",
-		});
-		return this;
-	}
-
-	public or() {
-		this.filterTokens.push({
-			token: "or",
-		});
-		return this;
-	}
-
-	public addFilter(
-		propertyName: string,
-		dataType: FilteredDataType,
-		matching: FilterCondition,
-		value: any
-	) {
-		this.filterTokens.push({
-			property: propertyName,
-			[dataType]: {
-				[matching]: value,
-			}
-		});
-		return this;
-	}
-
-	public addSort(
-		propertyName: string,
-		direction: "ascending" | "descending"
-	) {
-		this.sorts.push({
-			property: propertyName,
-			direction: direction,
-		});
-		return this;
-	}
-
-	/*
-		Aquire entries
-	*/
-	public async execute(): Promise<DatabaseList> {
-		this.convertFilterInfoToFilter();
-		const formattedQuery = {
-			filter: this.filter,
-			sorts: this.sorts,
-		};
-		const database = await this.notion.queryDatabase(
-			this.database_id,
-			formattedQuery
-		);
-		return new DatabaseList(database, this.notion);
-	}
-}
-
-
 type DatabaseListProps = {
 	object: "list";
 	results: any[];
@@ -358,6 +268,18 @@ export class DatabaseList {
 		}
 	}
 
+	async relationMethod(page_id:string) {
+		return this.giveRelationAccess(page_id);
+	}
+
+	private giveRelationAccess(page_id: string): () => Promise<any> {
+		return async () => {
+			const linkedPage = await this.notion.getPage(page_id);
+			if (!linkedPage.properties) throw new ConflictException({ message: "notion api data integrity logic failure" });
+			return linkedPage.properties;
+		}
+	} 
+
 	/*
 		Data extraction operation
 	*/
@@ -377,6 +299,10 @@ export class DatabaseList {
 		this.notion.updateBlock(this.list.results[0].id, key, value);
 	}
 
+	async all() {
+		return await this.getPropertiesList();
+	}
+
 	/*
 		entry bassed list operation
 	*/
@@ -388,6 +314,29 @@ export class DatabaseList {
 			const page = await this.notion.getPage(pageId);
 			return new Page(page, this.notion);
 		}));
+	}
+
+	public constructEntry(properties: any): NotionEntry {
+		return new NotionEntry(
+			properties,
+			this.notion,
+			);
+	}
+}
+
+class NotionEntry {
+	[key: string]: any;
+	constructor(
+		properties: {[key: string]: any},
+		private notion: NotionService,
+	) {
+		Object.assign(this, properties);
+	}
+
+	async retrievePage(): Promise<Page> {
+		const page = await this.notion.getBlock(this.id);
+		// return new Page(page.results, this.notion);
+		return page;
 	}
 }
 
@@ -402,13 +351,63 @@ export class Page {
 		if (!children.results) throw new ConflictException({ message: "notion api data integrity logic failure" });
 		return children.results;
 	}
+
+	getBlock(count: number): any {
+		return this.page;
+	}
 }
 
 export const propertyExtractors: {[key:string]:(data: any)=>any} = {
 	rich_text: async (data: any) => {
+		if (!data[data.type][0]) return null;
 		return data[data.type][0].plain_text;
 	},
 	number: async (data: any) => {
 		return data[data.type];
+	},
+	unique_id: async (data: any) => {
+		return data[data.type].number;
+	},
+	title: async (data: any) => {
+		if (!data[data.type][0]) return null;
+		const type = data[data.type][0].type;
+		return data[data.type][0][type].content;
+	},
+	select: async (data: any) => {
+		if (!data[data.type]) return null;
+		return data[data.type].name;
+	},
+	multi_select: async (data: any) => {
+		if (!data[data.type]) return null;
+		return data[data.type].map((item: any) => item.name);
+	},
+	date: async (data: any) => {
+		if (!data[data.type]) return null;
+		return data[data.type].start;
+	},
+	people: async (data: any) => {
+		if (!data[data.type]) return null;
+		return data[data.type].map((item: any) => item.person.name);
+	},
+	relation: async (data: any) => {
+		if (!data[data.type]) return null;
+		return data[data.type].map((item: any) => item.id);
+	},
+	formula: async (data: any) => {
+		if (!data[data.type]) return null;
+		return data[data.type][data[data.type].type];
+	},
+	url: async (data: any) => {
+		if (!data[data.type]) return null;
+		return data[data.type];
 	}
 }
+
+// export class Relation {
+// 	constructor(
+// 		private id: string,
+// 		private extractionQuery: any,
+// 		private dataAdapter: any,
+// 		private propertyExtractors: {[key:string]:(data: any)=>any},
+// 	) {}
+// }

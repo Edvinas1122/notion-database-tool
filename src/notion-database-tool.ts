@@ -27,6 +27,8 @@ const insertMethodMap: {[key:string]:string} = {
 	"relation": "addRelation",
 	"rich_text": "addRichText",
 	"select": "addSelect",
+	"url": "addUrl",
+	"title": "addTitle",
 };
 
 
@@ -44,7 +46,7 @@ const insertMethodSelector = (property_type: string) => {
 
 export class NotionDatabaseTool {
 	constructor(
-		private notion: NotionService,
+		private notion_service: NotionService,
 		private tables: TableProps[],
 		private entryDataAdapter: DataAdapterFunction,
 		private propertyExtractors: {[key:string]:(data: any)=>any},
@@ -56,13 +58,17 @@ export class NotionDatabaseTool {
 		return new Table(
 			table.database_id,
 			table.properties,
-			new DatabaseQueryBuilder(table.database_id, this.notion),
-			new DatabaseEntryBuilder(table.database_id, this.notion),
+			new DatabaseQueryBuilder(table.database_id, this.notion_service),
+			new DatabaseEntryBuilder(table.database_id, this.notion_service),
 			this.entryDataAdapter,
 			queryComparator,
 			insertMethodSelector,
 			this.propertyExtractors
 		);
+	}
+
+	notion() {
+		return this.notion_service;
 	}
 
 }
@@ -244,7 +250,7 @@ export class DatabaseEntryBuilder {
 			parent: { database_id: this.database_id },
 			properties: this.properties,
 		};
-		console.log(formattedProperties);
+		// console.log(formattedProperties);
 		return await this.notion.createPage(formattedProperties);
 	}
 }

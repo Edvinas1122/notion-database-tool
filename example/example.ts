@@ -1,4 +1,7 @@
-import buildNotionDatabaseTool, {TableProps} from "@edvinas1122/notion-database-tool";
+import 
+	buildNotionDatabaseTool, { 
+	TableProps
+} from "@edvinas1122/notion-database-tool";
 
 
 /*

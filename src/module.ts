@@ -21,7 +21,7 @@ function buildNotionDatabaseTool(
 ): NotionDatabaseTool
 {
 	const notionAPI = new NotionAPI(
-		integrationToken,
+		integrationToken
 	);
 	const notionService = new NotionService(
 		notionAPI,
@@ -41,3 +41,4 @@ function buildNotionDatabaseTool(
 }
 
 export default buildNotionDatabaseTool;
+export type { TableProps, NotionDatabaseTool, NotionService };

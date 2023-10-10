@@ -34,18 +34,24 @@ class EntryExtractor {
 		private dataAdapter: DataAdapterFunction,
 		private queryComparator: string,
 		private propertyExtractors: {[key:string]:(data: any)=>any},
+		private sort?: {[key:string]:string}
 		// private extractQueryAdapter: QueryAdapterFunction
 	){
 		this["byKey"] = this.assignExtractor(properties.key);
 		for (const property of properties.properties) {
 			const methodName: string = "by" + property.property.replace(/\s+/g, '_');
 			this[methodName] = this.assignExtractor(property);
-			console.log(methodName);
+			// console.log(methodName);
 		}
 	}
 
 	public async all(): Promise<Entry> {
-		return await this.extractionQuery.execute();
+		return await this.extractionQuery.execute()
+			.then((data: any) => (new Entry(
+				this.dataAdapter(data),
+				this.propertyExtractors,
+				""
+			)));
 	}
 
 	private assignExtractor(property: Property): (key: string) => Promise<Entry>
@@ -61,7 +67,8 @@ class EntryExtractor {
 				.execute();
 			return filtered.then((data: any) => (new Entry(
 				this.dataAdapter(data),
-				this.propertyExtractors[property.property_type],
+				this.propertyExtractors,
+				property.property_type,
 			)));
 		}
 	}
@@ -113,6 +120,7 @@ export class Table
 
 	getEntries(
 		comperor?: string,
+		sort?: {[key:string]:string}
 	): EntryExtractor
 	{
 		return new EntryExtractor(
@@ -121,16 +129,10 @@ export class Table
 			this.extractionQuery,
 			this.dataAdapter,
 			comperor ? comperor : this.defaultComparator(this.properties.key.property_type),
-			this.propertyExtractors
+			this.propertyExtractors,
+			sort,
 		);
 	}
-
-	// getEntriesAll(): any
-	// {
-	// 	return this.extractionQuery.execute()
-	// 		// .then((data: any) => {
-
-	// }
 
 	newEntrySlot(): EntrySlot
 	{
@@ -140,6 +142,14 @@ export class Table
 			this.insertQueryAdapter,
 		);
 	}
+
+	query() {
+		return new Query(
+			this.extractionQuery,
+			this.dataAdapter,
+			this.propertyExtractors,
+		);
+	}
 }
 
 type CellValue = any;
@@ -147,12 +157,17 @@ type CellValue = any;
 class Entry {
 	constructor(
 		private methodProvider: any,
-		private dataAdapter: (data: any) => CellValue = (data: any) => data,
-	) {}
+		private propertyExtractors: {[key: string]: (data: any) => any},
+		private key: string = "",
+		// private dataAdapter: (data: any) => CellValue = (data: any) => data,
+	) {
+
+	}
 
 	async property(key: string): Promise<any> {
-		if (!this.dataAdapter) this.dataAdapter = (data: any) => data;
-		return await this.methodProvider.property(key).then(this.dataAdapter);
+		// if (!this.dataAdapter) this.dataAdapter = (data: any) => data;
+		return await this.methodProvider.property(key)
+			.then(this.propertyExtractors[this.key] ? this.propertyExtractors[this.key] : (data: any) => data);
 	}
 
 	async id(): Promise<string> {
@@ -163,11 +178,110 @@ class Entry {
 		return await this.methodProvider.editProperty(key, value);
 	}
 
-	async all(): Promise<any[]> {
-		return this.methodProvider.all();
+	async all(): Promise<Single[]> {
+		const data = await this.methodProvider.all();
+		const extractedData = await Promise
+			.all(data
+				.map(this.extractItemProperties.bind(this))
+			);
+		return extractedData;
+		// .map(properties => properties);
+		//  new Single(
+		// 	properties,
+		// 	this.methodProvider,
+		// 	this.propertyExtractors,
+		// ));
 	}
-
+	
 	async delete(): Promise<any> {
 		return await this.methodProvider.delete();
+	}
+
+	private async extractItemProperties(item: any): Promise<any> {
+		let extracted: any = {};
+
+		const extractionPromises = Object.entries(item)
+			.map(async ([key, value]: any) => {
+				const extract = this.propertyExtractors[value.type];
+				if (extract) {
+					extracted[key] = await extract(value);
+					if (value.type === "relation") {
+						const relationExtractors = extracted[key].map((relationId: string) => {
+							const relationMethod = this.methodProvider.relationMethod(relationId);
+							return this.handleRelationAquisition(relationMethod);
+						});
+						extracted[key] = relationExtractors;
+					}
+				} else {
+					extracted[key] = value;
+				}
+			});
+
+		await Promise.all(extractionPromises);
+		return this.methodProvider.constructEntry(extracted);
+	}
+
+	private handleRelationAquisition(
+		relationMethodPromise: Promise<()=>Promise<any>>
+	): () => Promise<any> {
+
+		return async () => {
+				const relation = await relationMethodPromise;
+				const relationData = await relation();
+				const parserdData  = await this.extractItemProperties(relationData);
+				return parserdData;
+		}
+	}
+}
+
+class Single {
+    [key: string]: any;
+
+    constructor(
+		properties: { [key: string]: string },
+		private methodProvider: any,
+		private propertyExtractors: { [key: string]: (data: any) => any },
+    ) {
+        Object.assign(this, properties);
+    }
+
+	async relation() {
+		return await this.methodProvider.relation();
+	}
+}
+
+class Query {
+	constructor(
+		private extractionQuery: any,
+		private dataAdapter: any,
+		private propertyExtractors: {[key:string]:(data: any)=>any},
+	) {}
+
+	filter(property: string, condition: string, comperor: string, value: any) {
+		this.extractionQuery.addFilter(property, condition, comperor, value);
+		return this;
+	}
+
+	sort(property: string, direction: string) {
+		this.extractionQuery.addSort(property, direction);
+		return this;
+	}
+
+	and() {
+		this.extractionQuery.and();
+		return this;
+	}
+
+	or() {
+		this.extractionQuery.or();
+		return this;
+	}
+
+	async get() {
+		const data = await this.extractionQuery.execute();
+		return new Entry(
+			this.dataAdapter(data),
+			this.propertyExtractors,
+		);
 	}
 }
