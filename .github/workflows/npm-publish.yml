@@ -1,0 +1,43 @@
+name: Publish to npm
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'package.json'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20.5.0'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build dist
+        run: npm run build
+
+      - name: Check for version change
+        id: check_version
+        run: |
+          git fetch --prune --unshallow
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          OLD_VERSION=$(git show origin/main:package.json | node -p "require('/dev/stdin').version")
+          if [ "$NEW_VERSION" != "$OLD_VERSION" ]; then
+            echo "::set-output name=changed::true"
+          fi
+
+      - name: Publish to npm
+        if: steps.check_version.outputs.changed == 'true'
+        run: npm publish
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
