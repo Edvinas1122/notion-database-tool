@@ -137,7 +137,6 @@ export class Table
 	}
 
 	getEntry(
-		id: string,
 		comperor?: string,
 		sort?: {[key:string]:string}
 	): EntryExtractor
