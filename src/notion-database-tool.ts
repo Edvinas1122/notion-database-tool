@@ -258,7 +258,6 @@ export class DatabaseEntryBuilder {
 			parent: { database_id: this.database_id },
 			properties: this.properties,
 		};
-		// console.log(formattedProperties);
 		return await this.notion.createPage(formattedProperties);
 	}
 }
