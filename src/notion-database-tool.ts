@@ -54,7 +54,7 @@ export class NotionDatabaseTool {
 
 	getTable(name: string): Table {
 		const table = this.tables.find((table) => table.name === name);
-		if (!table) throw new BadRequestException("No table found");
+		if (!table) throw new BadRequestException("Table name is not registered");
 		return new Table(
 			table.database_id,
 			table.properties,
@@ -89,6 +89,7 @@ enum FilteredDataType {
 }
 
 export class DatabaseQueryBuilder {
+	private limit: number = 100;
 	private filterTokens: any[] = [];
 	private filter: any = {};
 	private sorts: any[] = [];
@@ -157,6 +158,11 @@ export class DatabaseQueryBuilder {
 		return this;
 	}
 
+	public setLimit(limit: number) {
+		this.limit = limit;
+		return this;
+	}
+
 	/*
 		Aquire entries
 	*/
@@ -169,9 +175,10 @@ export class DatabaseQueryBuilder {
 		if (this.filterTokens.length > 0) {
 			formattedQuery.filter = this.filter;
 		}
+		formattedQuery.page_size = this.limit;
 		const database = await this.notion.queryDatabase(
 			this.database_id,
-			formattedQuery
+			formattedQuery,
 		);
 		return database;
 	}
@@ -226,6 +233,7 @@ export class DatabaseEntryBuilder {
 	}
 
 	public addRelation(name: string, relation: string[]) {
+		if (!relation) return this;
 		this.properties[name] = {
 			relation: relation.map((id) => {
 				return {
