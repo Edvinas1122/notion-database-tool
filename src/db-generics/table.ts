@@ -34,10 +34,11 @@ class EntryExtractor {
 		private dataAdapter: DataAdapterFunction,
 		private queryComparator: string,
 		private propertyExtractors: {[key:string]:(data: any)=>any},
-		private sort?: {[key:string]:string}
+		private sort?: {[key:string]:string},
+		private limit: number = 100,
 		// private extractQueryAdapter: QueryAdapterFunction
 	){
-		this["byKey"] = this.assignExtractor(properties.key);
+		this["byKey"] = this.assignExtractor(this.properties.key);
 		for (const property of properties.properties) {
 			const methodName: string = "by" + property.property.replace(/\s+/g, '_');
 			this[methodName] = this.assignExtractor(property);
@@ -64,6 +65,7 @@ class EntryExtractor {
 					property.property_type,
 					this.queryComparator,
 					value)
+				.setLimit(this.limit)
 				.execute();
 			return filtered.then((data: any) => (new Entry(
 				this.dataAdapter(data),
@@ -131,6 +133,24 @@ export class Table
 			comperor ? comperor : this.defaultComparator(this.properties.key.property_type),
 			this.propertyExtractors,
 			sort,
+		);
+	}
+
+	getEntry(
+		id: string,
+		comperor?: string,
+		sort?: {[key:string]:string}
+	): EntryExtractor
+	{
+		return new EntryExtractor(
+			// this.id,
+			this.properties,
+			this.extractionQuery,
+			this.dataAdapter,
+			comperor ? comperor : this.defaultComparator(this.properties.key.property_type),
+			this.propertyExtractors,
+			sort,
+			1
 		);
 	}
 
