@@ -1,6 +1,6 @@
 {
 	"name": "@edvinas1122/notion-database-tool",
-	"version": "0.0.5",
+	"version": "0.0.6",
 	"description": "Tool for easy notion table editing",
 	"main": "dist/module.js",
 	"types": "dist/module.d.ts",
