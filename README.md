@@ -122,3 +122,4 @@ class Entry {
 
 Therefore, keeping interaction with our notion api consistent ant coherent.
 
+
