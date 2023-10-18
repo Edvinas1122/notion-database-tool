@@ -258,12 +258,18 @@ class Query {
 	) {}
 
 	filter(property: string, condition: string, comperor: string, value: any) {
+		// throw new Error("Method not implemented.");
 		this.extractionQuery.addFilter(property, condition, comperor, value);
 		return this;
 	}
 
 	sort(property: string, direction: string) {
 		this.extractionQuery.addSort(property, direction);
+		return this;
+	}
+
+	limit(limit: number) {
+		this.extractionQuery.setLimit(limit);
 		return this;
 	}
 
