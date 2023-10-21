@@ -295,8 +295,13 @@ export class DatabaseList {
 		this.notion.deleteBlock(this.list.results[0].id);
 	}
 
-	async update(key: string, value: any) {
-		this.notion.updateBlock(this.list.results[0].id, key, value);
+	async update(key: string, value: any, type: string) {
+		const test = {
+			"properties": {
+				[key]: {[type]: value}
+			}
+		}
+		return await this.notion.updatePage(this.list.results[0].id, test);
 	}
 
 	async all() {
@@ -402,12 +407,3 @@ export const propertyExtractors: {[key:string]:(data: any)=>any} = {
 		return data[data.type];
 	}
 }
-
-// export class Relation {
-// 	constructor(
-// 		private id: string,
-// 		private extractionQuery: any,
-// 		private dataAdapter: any,
-// 		private propertyExtractors: {[key:string]:(data: any)=>any},
-// 	) {}
-// }

@@ -77,4 +77,12 @@ export default class NotionService {
 			other: this.otherParams,
 		});
 	}
+
+	async updatePage(pageId: string, body: any, other?: any) {
+		return this.api.updatePage({
+			params: pageId ? { pageId: pageId } : undefined,
+			body: body,
+			other: this.otherParams,
+		});
+	}
 }

@@ -16,6 +16,7 @@ export enum NotionEndpoints {
     createPage = 'createPage',
     deleteBlock = 'deleteBlock',
     updateBlock = 'updateBlock',
+    updatePage = 'updatePage',
 }
 
 export const notionAPIConfig = (
@@ -40,6 +41,7 @@ export const notionAPIConfig = (
         { name: NotionEndpoints.createPage, path: 'pages', method: 'POST'},
         { name: NotionEndpoints.deleteBlock, path: 'blocks/:blockId', method: 'DELETE'},
         { name: NotionEndpoints.updateBlock, path: 'blocks/:blockId', method: 'PATCH'},
+        { name: NotionEndpoints.updatePage, path: 'pages/:pageId', method: 'PATCH'},
     ],
     defaultParams: parameters(rootPageDir? rootPageDir : ''),
 });

@@ -42,7 +42,6 @@ class EntryExtractor {
 		for (const property of properties.properties) {
 			const methodName: string = "by" + property.property.replace(/\s+/g, '_');
 			this[methodName] = this.assignExtractor(property);
-			// console.log(methodName);
 		}
 	}
 
@@ -193,8 +192,8 @@ class Entry {
 		return await this.methodProvider.id();
 	}
 
-	async update(key: string, value: any): Promise<any> {
-		return await this.methodProvider.editProperty(key, value);
+	async update(key: string, type: string, value: any): Promise<any> {
+		return await this.methodProvider.update(key, value, type);
 	}
 
 	async all(): Promise<Single[]> {
@@ -204,12 +203,6 @@ class Entry {
 				.map(this.extractItemProperties.bind(this))
 			);
 		return extractedData;
-		// .map(properties => properties);
-		//  new Single(
-		// 	properties,
-		// 	this.methodProvider,
-		// 	this.propertyExtractors,
-		// ));
 	}
 	
 	async delete(): Promise<any> {
