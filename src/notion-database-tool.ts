@@ -66,11 +66,6 @@ export class NotionDatabaseTool {
 			this.propertyExtractors
 		);
 	}
-
-	notion() {
-		return this.notion_service;
-	}
-
 }
 
 enum FilterCondition {

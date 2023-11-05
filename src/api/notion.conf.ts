@@ -44,6 +44,8 @@ export const notionAPIConfig = (
         { name: NotionEndpoints.updatePage, path: 'pages/:pageId', method: 'PATCH'},
     ],
     defaultParams: parameters(rootPageDir? rootPageDir : ''),
+    // logging: true,
+    logging: false,
 });
 
 export const parameters = (rootPageDir: string) => ({

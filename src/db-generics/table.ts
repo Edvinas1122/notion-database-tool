@@ -121,7 +121,8 @@ export class Table
 
 	getEntries(
 		comperor?: string,
-		sort?: {[key:string]:string}
+		sort?: {[key:string]:string},
+		limit?: number
 	): EntryExtractor
 	{
 		return new EntryExtractor(
@@ -132,6 +133,7 @@ export class Table
 			comperor ? comperor : this.defaultComparator(this.properties.key.property_type),
 			this.propertyExtractors,
 			sort,
+			limit ? limit : 100
 		);
 	}
 
@@ -170,9 +172,7 @@ export class Table
 	}
 }
 
-type CellValue = any;
-
-class Entry {
+export class Entry {
 	constructor(
 		private methodProvider: any,
 		private propertyExtractors: {[key: string]: (data: any) => any},
@@ -214,6 +214,7 @@ class Entry {
 
 		const extractionPromises = Object.entries(item)
 			.map(async ([key, value]: any) => {
+				if (!value?.type) return extracted[key] = value;
 				const extract = this.propertyExtractors[value.type];
 				if (extract) {
 					extracted[key] = await extract(value);
@@ -233,10 +234,12 @@ class Entry {
 		return this.methodProvider.constructEntry(extracted);
 	}
 
+	/*
+		Might have major recursion issues
+	*/
 	private handleRelationAquisition(
 		relationMethodPromise: Promise<()=>Promise<any>>
 	): () => Promise<any> {
-
 		return async () => {
 				const relation = await relationMethodPromise;
 				const relationData = await relation();
@@ -246,7 +249,7 @@ class Entry {
 	}
 }
 
-class Single {
+export class Single {
     [key: string]: any;
 
     constructor(

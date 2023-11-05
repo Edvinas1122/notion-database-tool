@@ -119,7 +119,7 @@ export default class NotionFormatterService {
 
 	private async handleNestedBlock(block: NotionBlock): Promise<NotionBlock> {
 		const children = await this.notion.getBlockChildren(block.id);
-		if (!children.results) throw new ConflictException({ message: "notion api data integrity logic failure" });
+		if (!children.results) throw new ConflictException("notion api data integrity logic failure in Nested Block" );
 		children.results = await this.handleSubBlocks(children.results);
 		block.children = children;
 		return block;
@@ -127,7 +127,7 @@ export default class NotionFormatterService {
 
 	private async handleLinkedBlocks(block: NotionBlock): Promise<NotionBlock> {
 		const linkedPage = await this.notion.getPage(block.id);
-		if (!linkedPage.properties) throw new ConflictException({ message: "notion api data integrity logic failure" });
+		if (!linkedPage?.properties) throw new ConflictException("notion api data integrity logic failure in linked Blocks");
 		block.children = linkedPage;
 		return block;
 	}
@@ -155,7 +155,6 @@ export type TableProps = {
 // 			new DatabaseEntryBuilder(table.database_id, this.notion),
 // 		);
 // 	}
-
 // }
 
 /*
@@ -275,10 +274,17 @@ export class DatabaseList {
 	private giveRelationAccess(page_id: string): () => Promise<any> {
 		return async () => {
 			const linkedPage = await this.notion.getPage(page_id);
-			if (!linkedPage.properties) throw new ConflictException({ message: "notion api data integrity logic failure" });
-			return linkedPage.properties;
+			if (!linkedPage?.properties) {
+				console.error("linkedPage is not an array:", page_id, "failed ");
+				return [];
+				// throw new ConflictException("notion api data integrity logic failure");
+			}
+			const new_item = linkedPage.properties;
+			new_item.cover = linkedPage.cover;
+			new_item.icon = linkedPage.icon;
+			return new_item;
 		}
-	} 
+	}
 
 	/*
 		Data extraction operation
@@ -343,6 +349,18 @@ class NotionEntry {
 		// return new Page(page.results, this.notion);
 		return page;
 	}
+
+	/*
+		does not make sence, we strip it away
+		when making the entry
+	*/
+	async retrievePageInfo(): Promise<any> {
+		const page = await this.notion.getPage(this.id);
+		if (!page?.object) {
+			console.error("page is not an array:", this.id, "failed ");
+		}
+		return page;
+	}
 }
 
 export class Page {
@@ -405,5 +423,13 @@ export const propertyExtractors: {[key:string]:(data: any)=>any} = {
 	url: async (data: any) => {
 		if (!data[data.type]) return null;
 		return data[data.type];
+	},
+	created_time: async (data: any) => {
+		if (!data[data.type]) return null;
+		return data[data.type];
+	},
+	status: async (data: any) => {
+		if (!data[data.type]) return null;
+		return data[data.type].name;
 	}
 }
