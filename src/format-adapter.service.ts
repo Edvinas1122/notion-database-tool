@@ -280,6 +280,7 @@ export class DatabaseList {
 				// throw new ConflictException("notion api data integrity logic failure");
 			}
 			const new_item = linkedPage.properties;
+			new_item.id = linkedPage.id;
 			new_item.cover = linkedPage.cover;
 			new_item.icon = linkedPage.icon;
 			return new_item;
@@ -346,8 +347,11 @@ class NotionEntry {
 
 	async retrievePage(): Promise<Page> {
 		const page = await this.notion.getBlock(this.id);
-		// return new Page(page.results, this.notion);
-		return page;
+		if (page === null) {
+			console.log(this);
+		}
+		return new Page(page.results, this.notion);
+		// return page;
 	}
 
 	/*
