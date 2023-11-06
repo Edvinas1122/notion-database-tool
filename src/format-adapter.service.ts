@@ -348,7 +348,7 @@ class NotionEntry {
 	async retrievePage(): Promise<Page> {
 		const page = await this.notion.getBlock(this.id);
 		if (page === null) {
-			console.log(this);
+			console.error(this);
 		}
 		return new Page(page.results, this.notion);
 		// return page;
