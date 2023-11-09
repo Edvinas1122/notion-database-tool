@@ -1,5 +1,17 @@
 import NotionAPI from "./api";
 
+type NotionSearchQuery = {
+	query: string;
+	sort?: {
+		direction: "ascending" | "descending";
+		timestamp: "last_edited_time" | "created_time";
+	};
+	filter?: {
+		value: "page" | "database";
+		property: "object";
+	};
+};
+
 export default class NotionService {
 	constructor(
 		private api: NotionAPI,
@@ -42,7 +54,7 @@ export default class NotionService {
 		});
 	}
 
-	async search(query: string, other?: any) {
+	async search(query: NotionSearchQuery, other?: any) {
 		return this.api.search({
 			body: query,
 			other: this.otherParams,

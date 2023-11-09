@@ -288,6 +288,11 @@ class Query {
 		return this;
 	}
 
+	cursor(cursor: number) {
+		this.extractionQuery.setCursor(cursor);
+		return this;
+	}
+
 	and() {
 		this.extractionQuery.and();
 		return this;

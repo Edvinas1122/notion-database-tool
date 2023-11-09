@@ -66,6 +66,36 @@ export class NotionDatabaseTool {
 			this.propertyExtractors
 		);
 	}
+
+	async search(query: string, table_name: string) {
+		const tableProps = this.tables.find((table) => table.name === table_name);
+		if (!tableProps) throw new BadRequestException("Table name is not registered");
+		const results = await this.notion_service.search({
+			query: query,
+			filter: {value: "page", property: "object"},
+			sort: {direction: "ascending", timestamp: "last_edited_time"}
+		});
+		const formated_db_id = addDashesToNotionDatabaseId(tableProps.database_id);
+		let promises: any[] = [];
+		const filtered_pages = results.results.filter((result: any) => result.parent.database_id === formated_db_id);
+		filtered_pages.forEach(async (page: any) => {
+			const properties = page.properties;
+			const extracted_properties: any = {};
+			Object.keys(properties).forEach(async (key) => {
+				const property_matching_name = tableProps.properties.properties.find((property: any) => property.property === key);
+				if (!property_matching_name) return;
+				const property_type = property_matching_name.property_type;
+				const property_extractor = this.propertyExtractors[property_type];
+				if (!property_extractor) return;
+				extracted_properties[key] = property_extractor(properties[key]);
+				promises.push(extracted_properties[key]);
+			});
+			page.properties = extracted_properties;
+			return page;
+		});
+		await Promise.all(promises);
+		return await filtered_pages;
+	}
 }
 
 enum FilterCondition {
@@ -88,6 +118,7 @@ export class DatabaseQueryBuilder {
 	private filterTokens: any[] = [];
 	private filter: any = {};
 	private sorts: any[] = [];
+	private start_cursor: number = 0;
 	constructor(
 		private database_id: string,
 		private notion: NotionService,
@@ -158,6 +189,11 @@ export class DatabaseQueryBuilder {
 		return this;
 	}
 
+	public setCursor(cursor: number) {
+		this.start_cursor = cursor;
+		return this;
+	}
+
 	/*
 		Aquire entries
 	*/
@@ -169,6 +205,9 @@ export class DatabaseQueryBuilder {
 		}
 		if (this.filterTokens.length > 0) {
 			formattedQuery.filter = this.filter;
+		}
+		if (this.start_cursor > 0) {
+			formattedQuery.start_cursor = this.start_cursor;
 		}
 		formattedQuery.page_size = this.limit;
 		const database = await this.notion.queryDatabase(
@@ -255,4 +294,11 @@ export class DatabaseEntryBuilder {
 		};
 		return await this.notion.createPage(formattedProperties);
 	}
+}
+
+function addDashesToNotionDatabaseId(id: string) {
+	return `${id.slice(0, 8)}-${id.slice(8, 12)}-${id.slice(12, 16)}-${id.slice(
+		16,
+		20
+	)}-${id.slice(20)}`;
 }
