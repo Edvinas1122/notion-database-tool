@@ -1,10 +1,10 @@
-export type Property = {
+export type Property<T = string> = {
 	property: string;
-	property_type: string;
+	property_type: T;
 }
-export type Properties = {
-	key: Property;
-	properties: Property[];
+export type Properties<T = string> = {
+	key: Property<T>;
+	properties: Property<T>[];
 }
 
 type QueryInitateProps = {
@@ -25,7 +25,11 @@ type QueryAdapterFunction = (query: any, queryInitateProps: any) => any;
 */
 type queryComparator = (property_type: string) => string
 
-class EntryExtractor {
+type PropertyMethods<T extends Properties> = {
+    [P in T['properties'][number]['property'] as `by${Capitalize<string & P>}`]: (key: string) => Promise<Entry>;
+}
+
+class EntryExtractor implements PropertyMethods<Properties> {
 	[key: string]: any;
 	constructor(
 		// private id: string,
@@ -38,10 +42,10 @@ class EntryExtractor {
 		private limit: number = 100,
 		// private extractQueryAdapter: QueryAdapterFunction
 	){
-		this["byKey"] = this.assignExtractor(this.properties.key);
+		this["byKey"] = this.assignExtractor(this.properties.key) as (key: string) => Promise<Entry>
 		for (const property of properties.properties) {
 			const methodName: string = "by" + property.property.replace(/\s+/g, '_');
-			this[methodName] = this.assignExtractor(property);
+			this[methodName] = this.assignExtractor(property) as (key: string) => Promise<Entry>;
 		}
 	}
 
@@ -172,9 +176,19 @@ export class Table
 	}
 }
 
+interface MethodProvider {
+	property: (key: string) => Promise<any>,
+	id: () => Promise<string>,
+	update: (key: string, value: any, type: string) => Promise<any>,
+	all: () => Promise<any[]>,
+	delete: () => Promise<any>,
+	relationMethod: (relation: string) => Promise<any>,
+	constructEntry: (data: any) => Promise<Entry>,
+}
+
 export class Entry {
 	constructor(
-		private methodProvider: any,
+		private methodProvider: MethodProvider,
 		private propertyExtractors: {[key: string]: (data: any) => any},
 		private key: string = "",
 		// private dataAdapter: (data: any) => CellValue = (data: any) => data,

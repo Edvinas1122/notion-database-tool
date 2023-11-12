@@ -336,7 +336,7 @@ export class DatabaseList {
 	}
 }
 
-class NotionEntry {
+export class NotionEntry {
 	[key: string]: any;
 	constructor(
 		properties: {[key: string]: any},

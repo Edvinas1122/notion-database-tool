@@ -10,11 +10,12 @@ import
 from "./api/notion.service";
 
 
-export type TableProps = {
+export type TableProps<T = string> = {
 	name: string;
 	database_id: string;
-	properties: Properties;
+	properties: Properties<T>;
 }
+
 
 const queryComparatorMap: {[key:string]:string} = {
 	"number": "equals",
@@ -31,6 +32,16 @@ const insertMethodMap: {[key:string]:string} = {
 	"title": "addTitle",
 };
 
+type PropertyType = "number" | "relation" | "rich_text" | "select" | "url" | "title";
+
+type TypeMap = {
+	title: string;
+	select: string;
+	rich_text: string;
+	relation: Array<() => Promise<any>>;
+	number: string;
+	url: string;
+};
 
 const queryComparator = (property_type: string) => {
 	const comparator = queryComparatorMap[property_type];
